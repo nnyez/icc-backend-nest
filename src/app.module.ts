@@ -5,7 +5,6 @@ import { StatusModule } from './status/status.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
-import { ProductController } from './products/controllers/product.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({

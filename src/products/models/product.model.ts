@@ -12,7 +12,23 @@ export class Product {
     public price: number,
     public stock: number,
     public createdAt: Date,
-  ) {}
+  ) {
+    if (!name || name.trim().length < 3) {
+      throw new Error("Nombre inválido");
+    }
+
+    if (!description || description.trim().length < 5) {
+      throw new Error("Descripción inválida");
+    }
+
+    if (!price || price <= 0) {
+      throw new Error("Precio inválido");
+    }
+
+    if (stock === undefined || stock < 0) {
+      throw new Error("Stock inválido");
+    }
+  }
 
   // ==================== FACTORY METHODS ====================
 
@@ -72,7 +88,7 @@ export class Product {
       description: this.description,
       price: this.price,
       stock: this.stock,
-      createdAt: this.createdAt.toDateString(),
+      createdAt: this.createdAt.toISOString(),
     };
   }
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
@@ -14,7 +14,7 @@ export class ProductsService {
   constructor(
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
-  ) {}
+  ) { }
 
   /**
    * Obtener todos los productos (enfoque funcional)
@@ -46,11 +46,16 @@ export class ProductsService {
    * Crear producto (flujo funcional)
    */
   async create(dto: CreateProductDto): Promise<ProductResponseDto> {
+    // Validar que el nombre no exista
+    if (await this.productRepository.exists({ where: { name: dto.name } })) {
+      throw new BadRequestException("El nombre del producto ya está registrado");
+    }
+
     // Flujo funcional: DTO → Model → Entity → Save → Model → DTO
     const product = Product.fromDto(dto);           // DTO → Domain
     const entity = product.toEntity();              // Domain → Entity
     const saved = await this.productRepository.save(entity); // Persistir
-    
+
     return Product.fromEntity(saved).toResponseDto(); // Entity → Domain → DTO
   }
 
@@ -71,7 +76,6 @@ export class ProductsService {
 
     const saved = await this.productRepository.save(updated);
 
-    
     return Product.fromEntity(saved).toResponseDto();
   }
 
@@ -90,7 +94,7 @@ export class ProductsService {
       .toEntity();
 
     const saved = await this.productRepository.save(updated);
-    
+
     return Product.fromEntity(saved).toResponseDto();
   }
 

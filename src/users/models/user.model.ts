@@ -11,26 +11,27 @@ export class User {
     public email: string,
     public password: string,
     public createdAt: Date,
-  ) {}
+  ) {
+
+    if (!name || name.trim().length < 3) {
+      throw new Error("Nombre inválido");
+    }
+
+    if (!email || !email.includes("@")) {
+      throw new Error("Email inválido");
+    }
+
+    if (!password || password.length < 8) {
+      throw new Error("Password inválido");
+    }
+  }
 
   // ==================== FACTORY METHODS ====================
 
-  /**
-   * Crea un User desde un DTO de creación
-   */
   static fromDto(dto: CreateUserDto): User {
-    return new User(
-      0, // El ID se asigna en BD
-      dto.name,
-      dto.email,
-      dto.password, // Aquí se cifraría en un caso real
-      new Date(),
-    );
+    return new User(0, dto.name, dto.email, dto.password, new Date());
   }
 
-  /**
-   * Crea un User desde una entidad persistente
-   */
   static fromEntity(entity: UserEntity): User {
     return new User(
       entity.id,
@@ -41,11 +42,6 @@ export class User {
     );
   }
 
-  // ==================== CONVERSION METHODS ====================
-
-  /**
-   * Convierte este User a una entidad persistente
-   */
   toEntity(): UserEntity {
     const entity = new UserEntity();
     if (this.id > 0) {
@@ -54,13 +50,9 @@ export class User {
     entity.name = this.name;
     entity.email = this.email;
     entity.password = this.password;
-    entity.createdAt = this.createdAt;
     return entity;
   }
 
-  /**
-   * Convierte este User a un DTO de respuesta
-   */
   toResponseDto(): UserResponseDto {
     return {
       id: this.id,
@@ -68,7 +60,6 @@ export class User {
       email: this.email,
       createdAt: this.createdAt.toISOString(),
     };
-    // NO incluye password
   }
 
   /**
@@ -77,25 +68,14 @@ export class User {
   update(dto: UpdateUserDto): User {
     this.name = dto.name;
     this.email = dto.email;
-    if (dto.password) {
-      this.password = dto.password;
-    }
+    this.password = dto.password;
     return this;
   }
 
-  /**
-   * Aplica actualización parcial
-   */
   partialUpdate(dto: PartialUpdateUserDto): User {
-    if (dto.name !== undefined) {
-      this.name = dto.name;
-    }
-    if (dto.email !== undefined) {
-      this.email = dto.email;
-    }
-    if (dto.password !== undefined) {
-      this.password = dto.password;
-    }
+    if (dto.name !== undefined) this.name = dto.name;
+    if (dto.email !== undefined) this.email = dto.email;
+    if (dto.password !== undefined) this.password = dto.password;
     return this;
   }
 }
