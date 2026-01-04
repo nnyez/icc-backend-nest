@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductEntity } from '../entities/product.entity';
@@ -7,6 +7,8 @@ import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { PartialUpdateProductDto } from '../dtos/partial-update-product.dto';
 import { ProductResponseDto } from '../dtos/product-response.dto';
+import { NotFoundException } from 'src/exceptions/domain/not-found.exception';
+import { ConflictException } from 'src/exceptions/domain/conflict.exception';
 
 @Injectable()
 export class ProductsService {
@@ -48,7 +50,7 @@ export class ProductsService {
   async create(dto: CreateProductDto): Promise<ProductResponseDto> {
     // Validar que el nombre no exista
     if (await this.productRepository.exists({ where: { name: dto.name } })) {
-      throw new BadRequestException("El nombre del producto ya está registrado");
+      throw new ConflictException("El nombre del producto ya está registrado");
     }
 
     // Flujo funcional: DTO → Model → Entity → Save → Model → DTO

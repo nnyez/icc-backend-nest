@@ -1,4 +1,3 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
@@ -7,6 +6,10 @@ import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { PartialUpdateUserDto } from '../dtos/partial-update-user.dto';
 import { UserResponseDto } from '../dtos/user-response.dto';
+import { NotFoundException } from 'src/exceptions/domain/not-found.exception';
+import { BadRequestException } from 'src/exceptions/domain/bad-request.exception';
+import { Injectable } from '@nestjs/common';
+import { ConflictException } from 'src/exceptions/domain/conflict.exception';
 
 @Injectable()
 export class UsersService {
@@ -48,7 +51,7 @@ export class UsersService {
   async create(dto: CreateUserDto): Promise<UserResponseDto> {
 
     if (await this.userRepository.exists({ where: { email: dto.email } })) {
-      throw new BadRequestException("El email ya está registrado");
+      throw new ConflictException("El email ya está registrado");
     }
 
     // Flujo funcional: DTO → Model → Entity → Save → Model → DTO

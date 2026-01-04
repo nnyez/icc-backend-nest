@@ -38,7 +38,7 @@ export class User {
       entity.name,
       entity.email,
       entity.password,
-      entity.createdAt,
+      entity.createdAt
     );
   }
 
