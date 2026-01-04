@@ -1,68 +1,107 @@
-import { Injectable } from '@nestjs/common';
-import { Product } from '../entities/product.entity';
-import { ProductMapper } from '../mappers/product.mapper';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ProductEntity } from '../entities/product.entity';
+import { Product } from '../models/product.model';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { PartialUpdateProductDto } from '../dtos/partial-update-product.dto';
+import { ProductResponseDto } from '../dtos/product-response.dto';
 
 @Injectable()
 export class ProductsService {
-  private products: Product[] = [];
-  private currentId = 1;
 
-  constructor() {
-    this.products = [
-      ProductMapper.toEntity(this.currentId++, { name: 'Laptop', description: 'High-performance laptop', price: 999.99 }),
-      ProductMapper.toEntity(this.currentId++, { name: 'Mouse', description: 'Wireless mouse', price: 29.99 }),
-      ProductMapper.toEntity(this.currentId++, { name: 'Keyboard', description: 'Mechanical keyboard', price: 79.99 }),
-      ProductMapper.toEntity(this.currentId++, { name: 'Monitor', description: '4K monitor', price: 399.99 }),
-      ProductMapper.toEntity(this.currentId++, { name: 'Headphones', description: 'Noise-canceling headphones', price: 199.99 }),
-    ];
+  constructor(
+    @InjectRepository(ProductEntity)
+    private readonly productRepository: Repository<ProductEntity>,
+  ) {}
+
+  /**
+   * Obtener todos los productos (enfoque funcional)
+   */
+  async findAll(): Promise<ProductResponseDto[]> {
+    // 1. Repository → Entities
+    const entities = await this.productRepository.find();
+
+    // 2. Entities → Domain Models → DTOs (programación funcional)
+    return entities
+      .map(Product.fromEntity)           // Entity → Product
+      .map(product => product.toResponseDto()); // Product → DTO
   }
 
-  findAll() {
-    return this.products.map(p => ProductMapper.toResponse(p));
+  /**
+   * Obtener un producto por ID (enfoque funcional con manejo de errores)
+   */
+  async findOne(id: number): Promise<ProductResponseDto> {
+    const entity = await this.productRepository.findOne({ where: { id } });
+
+    if (!entity) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    return Product.fromEntity(entity).toResponseDto();
   }
 
-  findOne(id: number) {
-    const product = this.products.find(p => p.id === id);
-    if (!product) return { error: 'Product not found' };
-    return ProductMapper.toResponse(product);
+  /**
+   * Crear producto (flujo funcional)
+   */
+  async create(dto: CreateProductDto): Promise<ProductResponseDto> {
+    // Flujo funcional: DTO → Model → Entity → Save → Model → DTO
+    const product = Product.fromDto(dto);           // DTO → Domain
+    const entity = product.toEntity();              // Domain → Entity
+    const saved = await this.productRepository.save(entity); // Persistir
+    
+    return Product.fromEntity(saved).toResponseDto(); // Entity → Domain → DTO
   }
 
-  create(dto: CreateProductDto) {
-    const entity = ProductMapper.toEntity(this.currentId++, dto);
-    this.products.push(entity);
-    return ProductMapper.toResponse(entity);
+  /**
+   * Actualizar producto completo (PUT)
+   */
+  async update(id: number, dto: UpdateProductDto): Promise<ProductResponseDto> {
+    const entity = await this.productRepository.findOne({ where: { id } });
+
+    if (!entity) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
+
+    // Flujo funcional con transformaciones
+    const updated = Product.fromEntity(entity)  // Entity → Domain
+      .update(dto)                              // Aplicar cambios
+      .toEntity();                              // Domain → Entity
+
+    const saved = await this.productRepository.save(updated);
+
+    
+    return Product.fromEntity(saved).toResponseDto();
   }
 
-  update(id: number, dto: UpdateProductDto) {
-    const product = this.products.find(p => p.id === id);
-    if (!product) return { error: 'Product not found' };
+  /**
+   * Actualizar parcialmente (PATCH)
+   */
+  async partialUpdate(id: number, dto: PartialUpdateProductDto): Promise<ProductResponseDto> {
+    const entity = await this.productRepository.findOne({ where: { id } });
 
-    product.name = dto.name;
-    product.description = dto.description;
-    product.price = dto.price;
+    if (!entity) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
 
-    return ProductMapper.toResponse(product);
+    const updated = Product.fromEntity(entity)
+      .partialUpdate(dto)
+      .toEntity();
+
+    const saved = await this.productRepository.save(updated);
+    
+    return Product.fromEntity(saved).toResponseDto();
   }
 
-  partialUpdate(id: number, dto: PartialUpdateProductDto) {
-    const product = this.products.find(p => p.id === id);
-    if (!product) return { error: 'Product not found' };
+  /**
+   * Eliminar producto
+   */
+  async delete(id: number): Promise<void> {
+    const result = await this.productRepository.delete(id);
 
-    if (dto.name !== undefined) product.name = dto.name;
-    if (dto.description !== undefined) product.description = dto.description;
-    if (dto.price !== undefined) product.price = dto.price;
-
-    return ProductMapper.toResponse(product);
-  }
-
-  delete(id: number) {
-    const exists = this.products.some(p => p.id === id);
-    if (!exists) return { error: 'Product not found' };
-
-    this.products = this.products.filter(p => p.id !== id);
-    return { message: 'Deleted successfully' };
+    if (result.affected === 0) {
+      throw new NotFoundException(`Product with ID ${id} not found`);
+    }
   }
 }

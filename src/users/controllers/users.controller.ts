@@ -2,7 +2,7 @@ import { Controller, Get, Post, Put, Patch, Delete, Param, Body } from '@nestjs/
 import { UserMapper } from '../mappers/user.mapper';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { PartialUpdateUserDto } from '../dtos/partial-update-user.dto';
-import { User } from '../entities/user.entity';
+import { UserEntity } from '../entities/user.entity';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import { UsersService } from '../services/users.service';
 
